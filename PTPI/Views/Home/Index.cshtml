@@ -1,0 +1,61 @@
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8 text-center">
+        <h1 class="display-5 fw-bold mb-3">Welcome to PTP Integrated</h1>
+        <p class="lead text-muted mb-4">
+            A centralised account management system for managing persons, their accounts,
+            and transaction histories — all in one place.
+        </p>
+        <hr class="my-4" />
+    </div>
+</div>
+
+<div class="row justify-content-center g-4 mt-2">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center p-4">
+                <div class="display-6 text-primary mb-3">&#128100;</div>
+                <h5 class="card-title fw-semibold">Persons</h5>
+                <p class="card-text text-muted">
+                    Search, view, create and manage person records.
+                    Find by ID number, surname or account number.
+                </p>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="Persons" asp-action="Index" class="btn btn-primary mt-2">Go to Persons</a>
+                }
+                else
+                {
+                    <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary mt-2">Login to Access</a>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center p-4">
+                <div class="display-6 text-success mb-3">&#128179;</div>
+                <h5 class="card-title fw-semibold">Accounts</h5>
+                <p class="card-text text-muted">
+                    Manage accounts linked to persons. Track outstanding balances
+                    and open or close accounts as needed.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center p-4">
+                <div class="display-6 text-warning mb-3">&#128203;</div>
+                <h5 class="card-title fw-semibold">Transactions</h5>
+                <p class="card-text text-muted">
+                    Capture debit and credit transactions against accounts.
+                    Account balances update automatically.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,113 @@
+@model PTPI.Models.Person
+@{
+    ViewData["Title"] = "Edit Person";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Persons" asp-action="Index">Persons</a></li>
+        <li class="breadcrumb-item active">@Model.FullName</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Person Details</h5>
+            </div>
+            <div class="card-body p-4">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <form asp-action="Edit" asp-route-id="@Model.Code" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Code" />
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Surname" class="form-label"></label>
+                        <input asp-for="Surname" class="form-control" />
+                        <span asp-validation-for="Surname" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="IdNumber" class="form-label"></label>
+                        <input asp-for="IdNumber" class="form-control" />
+                        <span asp-validation-for="IdNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Accounts</h5>
+                <a asp-controller="Accounts" asp-action="Create" asp-route-personCode="@Model.Code"
+                   class="btn btn-sm btn-light">+ Add Account</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.Accounts.Any())
+                {
+                    <p class="text-muted p-4 mb-0">No accounts found. Click "Add Account" to create one.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Account Number</th>
+                                    <th class="text-end">Balance</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var account in Model.Accounts.OrderBy(a => a.AccountNumber))
+                                {
+                                    <tr>
+                                        <td><code>@account.AccountNumber</code></td>
+                                        <td class="text-end">
+                                            <span class="@(account.OutstandingBalance > 0 ? "text-danger fw-semibold" : "")">
+                                                R @account.OutstandingBalance.ToString("N2")
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (account.IsClosed)
+                                            {
+                                                <span class="badge bg-secondary">Closed</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Open</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-controller="Accounts" asp-action="Edit"
+                                               asp-route-id="@account.Code"
+                                               class="btn btn-sm btn-outline-primary">Edit</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

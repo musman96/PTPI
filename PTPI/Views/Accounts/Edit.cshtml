@@ -1,0 +1,149 @@
+@model PTPI.Models.Account
+@{
+    ViewData["Title"] = "Account Details";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Persons" asp-action="Index">Persons</a></li>
+        <li class="breadcrumb-item">
+            <a asp-controller="Persons" asp-action="Edit" asp-route-id="@Model.PersonCode">
+                @Model.Person?.FullName
+            </a>
+        </li>
+        <li class="breadcrumb-item active">Account @Model.AccountNumber</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header @(Model.IsClosed ? "bg-secondary" : "bg-primary") text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Account Details</h5>
+                @if (Model.IsClosed)
+                {
+                    <span class="badge bg-light text-dark">Closed</span>
+                }
+                else
+                {
+                    <span class="badge bg-light text-success">Open</span>
+                }
+            </div>
+            <div class="card-body p-4">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <form asp-action="Edit" asp-route-id="@Model.Code" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Code" />
+                    <input type="hidden" asp-for="PersonCode" />
+
+                    <div class="mb-3">
+                        <label asp-for="AccountNumber" class="form-label"></label>
+                        <input asp-for="AccountNumber" class="form-control" />
+                        <span asp-validation-for="AccountNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Outstanding Balance</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R</span>
+                            <input type="text" value="@Model.OutstandingBalance.ToString("N2")"
+                                   class="form-control bg-light" readonly />
+                        </div>
+                        <small class="text-muted">Balance is calculated automatically from transactions.</small>
+                    </div>
+
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="submit" class="btn btn-primary" @(Model.IsClosed ? "disabled" : "")>
+                            Save Changes
+                        </button>
+                        <a asp-controller="Persons" asp-action="Edit" asp-route-id="@Model.PersonCode"
+                           class="btn btn-outline-secondary">Back</a>
+                    </div>
+                </form>
+
+                <hr />
+
+                <div>
+                    @if (Model.IsClosed)
+                    {
+                        <form asp-action="Reopen" asp-route-id="@Model.Code" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success w-100">Reopen Account</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="Close" asp-route-id="@Model.Code" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger w-100"
+                                    @(Model.OutstandingBalance != 0 ? "disabled" : "")
+                                    title="@(Model.OutstandingBalance != 0 ? "Balance must be zero to close account" : "")">
+                                Close Account
+                            </button>
+                        </form>
+                        @if (Model.OutstandingBalance != 0)
+                        {
+                            <small class="text-muted d-block mt-1">Balance must be R 0.00 to close this account.</small>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Transactions</h5>
+                @if (!Model.IsClosed)
+                {
+                    <a asp-controller="Transactions" asp-action="Create" asp-route-accountCode="@Model.Code"
+                       class="btn btn-sm btn-light">+ Add Transaction</a>
+                }
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.Transactions.Any())
+                {
+                    <p class="text-muted p-4 mb-0">No transactions found.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in Model.Transactions)
+                                {
+                                    <tr>
+                                        <td>@t.TransactionDate.ToString("dd MMM yyyy")</td>
+                                        <td>@t.Description</td>
+                                        <td class="text-end @(t.Amount < 0 ? "text-danger" : "text-success")">
+                                            R @t.Amount.ToString("N2")
+                                        </td>
+                                        <td class="text-center">
+                                            <a asp-controller="Transactions" asp-action="Edit"
+                                               asp-route-id="@t.Code"
+                                               class="btn btn-sm btn-outline-primary">Edit</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

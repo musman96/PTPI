@@ -1,0 +1,57 @@
+@model PTPI.Models.Person
+@{
+    ViewData["Title"] = "Delete Person";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Persons" asp-action="Index">Persons</a></li>
+        <li class="breadcrumb-item active">Delete</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-danger border">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Confirm Delete</h5>
+            </div>
+            <div class="card-body p-4">
+                <p class="mb-4">Are you sure you want to delete the following person? This action cannot be undone.</p>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Name</dt>
+                    <dd class="col-sm-8">@(Model.Name ?? "—")</dd>
+
+                    <dt class="col-sm-4">Surname</dt>
+                    <dd class="col-sm-8">@(Model.Surname ?? "—")</dd>
+
+                    <dt class="col-sm-4">ID Number</dt>
+                    <dd class="col-sm-8"><code>@Model.IdNumber</code></dd>
+
+                    <dt class="col-sm-4">Accounts</dt>
+                    <dd class="col-sm-8">@Model.Accounts.Count account(s)</dd>
+                </dl>
+
+                @if (Model.Accounts.Any(a => !a.IsClosed))
+                {
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> This person has open accounts and cannot be deleted.
+                        Please close all accounts first.
+                    </div>
+                }
+
+                <form asp-action="Delete" asp-route-id="@Model.Code" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger"
+                                @(Model.Accounts.Any(a => !a.IsClosed) ? "disabled" : "")>
+                            Yes, Delete
+                        </button>
+                        <a asp-action="Edit" asp-route-id="@Model.Code" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
