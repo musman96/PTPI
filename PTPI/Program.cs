@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PTPI.Data;
+using PTPI.Repositories;
+using PTPI.Repositories.Interfaces;
 using PTPI.Services;
 using PTPI.Services.Interfaces;
 
@@ -31,6 +33,11 @@ namespace PTPI
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
             builder.Services.AddControllersWithViews();
+
+            // Repositories
+            builder.Services.AddScoped<IPersonRepository, PersonRepository>();
+            builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+            builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 
             // Application services
             builder.Services.AddScoped<IPersonService, PersonService>();

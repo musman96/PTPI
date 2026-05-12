@@ -1,31 +1,28 @@
-using Microsoft.EntityFrameworkCore;
-using PTPI.Data;
 using PTPI.Models;
+using PTPI.Repositories.Interfaces;
 using PTPI.Services.Interfaces;
 
 namespace PTPI.Services
 {
     public class TransactionService : ITransactionService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ITransactionRepository _transactionRepository;
         private readonly IAccountService _accountService;
 
-        public TransactionService(ApplicationDbContext context, IAccountService accountService)
+        public TransactionService(ITransactionRepository transactionRepository, IAccountService accountService)
         {
-            _context = context;
+            _transactionRepository = transactionRepository;
             _accountService = accountService;
         }
 
         public async Task<Transaction?> GetTransactionByIdAsync(int id)
         {
-            return await _context.Transactions
-                .Include(t => t.Account)
-                .FirstOrDefaultAsync(t => t.Code == id);
+            return await _transactionRepository.GetByIdAsync(id);
         }
 
         public async Task CreateTransactionAsync(Transaction transaction)
         {
-            var account = await _context.Accounts.FindAsync(transaction.AccountCode)
+            var account = await _accountService.GetAccountByIdAsync(transaction.AccountCode)
                 ?? throw new InvalidOperationException("Account not found.");
 
             if (account.IsClosed)
@@ -38,17 +35,16 @@ namespace PTPI.Services
                 throw new InvalidOperationException("Transaction date cannot be in the future.");
 
             transaction.CaptureDate = DateTime.Now;
-            _context.Transactions.Add(transaction);
-            await _context.SaveChangesAsync();
+            await _transactionRepository.AddAsync(transaction);
             await _accountService.RecalculateBalanceAsync(transaction.AccountCode);
         }
 
         public async Task UpdateTransactionAsync(Transaction transaction)
         {
-            var existing = await _context.Transactions.FindAsync(transaction.Code)
+            var existing = await _transactionRepository.FindAsync(transaction.Code)
                 ?? throw new InvalidOperationException("Transaction not found.");
 
-            var account = await _context.Accounts.FindAsync(existing.AccountCode)
+            var account = await _accountService.GetAccountByIdAsync(existing.AccountCode)
                 ?? throw new InvalidOperationException("Account not found.");
 
             if (account.IsClosed)
@@ -65,7 +61,7 @@ namespace PTPI.Services
             existing.TransactionDate = transaction.TransactionDate;
             existing.CaptureDate = DateTime.Now;
 
-            await _context.SaveChangesAsync();
+            await _transactionRepository.SaveAsync();
             await _accountService.RecalculateBalanceAsync(existing.AccountCode);
         }
     }

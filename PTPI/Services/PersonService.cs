@@ -1,44 +1,27 @@
-using Microsoft.EntityFrameworkCore;
-using PTPI.Data;
 using PTPI.Models;
 using PTPI.Models.ViewModels;
+using PTPI.Repositories.Interfaces;
 using PTPI.Services.Interfaces;
 
 namespace PTPI.Services
 {
     public class PersonService : IPersonService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IPersonRepository _personRepository;
 
-        public PersonService(ApplicationDbContext context)
+        public PersonService(IPersonRepository personRepository)
         {
-            _context = context;
+            _personRepository = personRepository;
         }
 
         public async Task<PersonListViewModel> GetPersonsAsync(string? searchTerm, int page)
         {
-            var query = _context.Persons.Include(p => p.Accounts).AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                var term = searchTerm.Trim().ToLower();
-                query = query.Where(p =>
-                    p.IdNumber.ToLower().Contains(term) ||
-                    (p.Surname != null && p.Surname.ToLower().Contains(term)) ||
-                    p.Accounts.Any(a => a.AccountNumber.ToLower().Contains(term)));
-            }
-
-            var totalCount = await query.CountAsync();
+            var totalCount = await _personRepository.CountAsync(searchTerm);
             var totalPages = (int)Math.Ceiling(totalCount / (double)PersonListViewModel.PageSize);
             totalPages = Math.Max(1, totalPages);
             var currentPage = Math.Max(1, Math.Min(page, totalPages));
 
-            var persons = await query
-                .OrderBy(p => p.Surname)
-                .ThenBy(p => p.Name)
-                .Skip((currentPage - 1) * PersonListViewModel.PageSize)
-                .Take(PersonListViewModel.PageSize)
-                .ToListAsync();
+            var persons = await _personRepository.GetPagedAsync(searchTerm, currentPage, PersonListViewModel.PageSize);
 
             return new PersonListViewModel
             {
@@ -52,9 +35,7 @@ namespace PTPI.Services
 
         public async Task<Person?> GetPersonByIdAsync(int id)
         {
-            return await _context.Persons
-                .Include(p => p.Accounts)
-                .FirstOrDefaultAsync(p => p.Code == id);
+            return await _personRepository.GetByIdAsync(id);
         }
 
         public async Task CreatePersonAsync(Person person)
@@ -62,8 +43,7 @@ namespace PTPI.Services
             if (await IsIdNumberTakenAsync(person.IdNumber))
                 throw new InvalidOperationException($"A person with ID Number '{person.IdNumber}' already exists.");
 
-            _context.Persons.Add(person);
-            await _context.SaveChangesAsync();
+            await _personRepository.AddAsync(person);
         }
 
         public async Task UpdatePersonAsync(Person person)
@@ -71,34 +51,30 @@ namespace PTPI.Services
             if (await IsIdNumberTakenAsync(person.IdNumber, person.Code))
                 throw new InvalidOperationException($"A person with ID Number '{person.IdNumber}' already exists.");
 
-            var existing = await _context.Persons.FindAsync(person.Code)
+            var existing = await _personRepository.GetByIdAsync(person.Code)
                 ?? throw new InvalidOperationException("Person not found.");
 
             existing.Name = person.Name;
             existing.Surname = person.Surname;
             existing.IdNumber = person.IdNumber;
 
-            await _context.SaveChangesAsync();
+            await _personRepository.SaveAsync();
         }
 
         public async Task DeletePersonAsync(int id)
         {
-            var person = await _context.Persons
-                .Include(p => p.Accounts)
-                .FirstOrDefaultAsync(p => p.Code == id)
+            var person = await _personRepository.GetByIdAsync(id)
                 ?? throw new InvalidOperationException("Person not found.");
 
             if (person.Accounts.Any(a => !a.IsClosed))
                 throw new InvalidOperationException("Cannot delete a person who has open accounts. Please close all accounts first.");
 
-            _context.Persons.Remove(person);
-            await _context.SaveChangesAsync();
+            await _personRepository.DeleteAsync(person);
         }
 
         public async Task<bool> IsIdNumberTakenAsync(string idNumber, int? excludeCode = null)
         {
-            return await _context.Persons.AnyAsync(p =>
-                p.IdNumber == idNumber && (excludeCode == null || p.Code != excludeCode));
+            return await _personRepository.IdNumberExistsAsync(idNumber, excludeCode);
         }
     }
 }
